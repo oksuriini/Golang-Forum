@@ -2,13 +2,18 @@ package main
 
 import (
 	"html/template"
-	"log"
 	"net/http"
+	"time"
 )
+
+type Data struct {
+	CurrentYear int
+}
 
 // Add function handlers here
 
-func home(w http.ResponseWriter, r *http.Request) {
+func (app *application) home(w http.ResponseWriter, r *http.Request) {
+
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -23,19 +28,23 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		log.Println(err.Error())
+		app.errorLogger.Print(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
+	data := &Data{
+		CurrentYear: time.Now().Year(),
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
 	if err != nil {
-		log.Println(err.Error())
+		app.errorLogger.Print(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
 
-func forum(w http.ResponseWriter, r *http.Request) {
+func (app *application) forum(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Here is forumpage"))
 }
 
