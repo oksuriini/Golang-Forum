@@ -3,7 +3,6 @@ package main
 import (
 	"html/template"
 	"net/http"
-	"time"
 )
 
 type Data struct {
@@ -28,16 +27,11 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		app.errorLogger.Print(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, err)
 		return
 	}
 
-	data := &Data{
-		CurrentYear: time.Now().Year(),
-	}
-
-	err = ts.ExecuteTemplate(w, "base", data)
+	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
 		app.errorLogger.Print(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
