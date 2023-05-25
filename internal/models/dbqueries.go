@@ -61,7 +61,18 @@ func (s *SubjectModel) Insert(subjectId int, title string) (int, error) {
 	return 0, nil
 }
 
-func (m *MessageModel) Get(threadId int) (*Message, error) {
+func (m *MessageModel) Get(threadId int) ([]*Message, error) {
+	query := `SELECT content, creator_id FROM messages WHERE
+	thread_id = ?`
+
+	result, err := m.DB.Query(query, threadId)
+	if err != nil {
+		return nil, err
+	}
+
+	if result != nil {
+		return nil, nil
+	}
 	return nil, nil
 }
 

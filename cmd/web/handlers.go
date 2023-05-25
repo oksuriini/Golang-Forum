@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 )
@@ -38,17 +39,46 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) forum(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Here is forumpage"))
+	if r.URL.Path != "/forum" {
+		app.notFound(w)
+		return
+	}
+
+	files := []string{
+		"./ui/html/base.tmpl.html",
+		"./ui/html/partials/footer.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/forum.tmpl.html",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		app.serverError(w, err)
+	}
 }
 
-//func register(w http.ResponseWriter, r *http.Request) {}
-//
-//func registerPost(w http.ResponseWriter, r *http.Request) {}
-//
-//func login(w http.ResponseWriter, r *http.Request) {}
-//
-//func logout(w http.ResponseWriter, r *http.Request) {}
-//
+func (app *application) createMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	content := "Test Content"
+	threadId := 1
+	creatorId := 2
+
+	app.messages.Insert(threadId, content, creatorId)
+
+	http.Redirect(w, r, fmt.Sprintf("/"), http.StatusSeeOther)
+}
+
 //func viewSubject(w http.ResponseWriter, r *http.Request) {
 //	subject := r.URL.Query().Get("sub")
 //	if subject == "" {
@@ -77,3 +107,12 @@ func (app *application) forum(w http.ResponseWriter, r *http.Request) {
 //	}
 //	w.Write([]byte("Message posted successfully"))
 //}
+
+//func register(w http.ResponseWriter, r *http.Request) {}
+//
+//func registerPost(w http.ResponseWriter, r *http.Request) {}
+//
+//func login(w http.ResponseWriter, r *http.Request) {}
+//
+//func logout(w http.ResponseWriter, r *http.Request) {}
+//
