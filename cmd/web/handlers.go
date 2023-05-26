@@ -74,9 +74,134 @@ func (app *application) createMessage(w http.ResponseWriter, r *http.Request) {
 	threadId := 1
 	creatorId := 2
 
-	app.messages.Insert(threadId, content, creatorId)
+	app.messages.InsertMessageInThread(threadId, content, creatorId)
 
 	http.Redirect(w, r, fmt.Sprintf("/"), http.StatusSeeOther)
+}
+
+func (app *application) getThreadMessages(w http.ResponseWriter, r *http.Request) {
+
+	if r.URL.Path != "/forum/thread" {
+		app.notFound(w)
+		return
+	}
+
+	thread := r.URL.Query().Get("thread")
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	threadTitle := r.URL.Query().Get("thread")
+
+	if thread == "" {
+		app.notFound(w)
+		return
+	}
+
+	files := []string{
+		"./ui/html/base.tmpl.html",
+		"./ui/html/partials/footer.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/messages.tmpl.html",
+	}
+
+	threadId, err := app.messages.GetThreadId(threadTitle)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data, err := app.messages.GetMessagesInThread(threadId)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, err)
+	}
+
+}
+
+func (app *application) getThreads(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/forum/subject" {
+		app.notFound(w)
+		return
+	}
+
+	subjectTitle := r.URL.Query().Get("subject")
+
+	subjectId, err := app.messages.GetSubjectId(subjectTitle)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	files := []string{
+		"./ui/html/base.tmpl.html",
+		"./ui/html/partials/footer.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/threads.tmpl.html",
+	}
+
+	data, err := app.messages.GetThreadsInSubject(subjectId)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, err)
+	}
+
+}
+
+func (app *application) getSubjects(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/forum/subjects" {
+		app.notFound(w)
+		return
+	}
+
+	files := []string{
+		"./ui/html/base.tmpl.html",
+		"./ui/html/partials/footer.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/subjects.tmpl.html",
+	}
+
+	data, err := app.messages.GetAllSubjects()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, err)
+	}
+
 }
 
 //func viewSubject(w http.ResponseWriter, r *http.Request) {

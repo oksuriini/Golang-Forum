@@ -1,0 +1,9 @@
+{{define "title"}}All Threads in Subject{{end}}
+
+{{define "main"}}
+    <ul>
+        {{range .}}
+            <li><a href="/forum/thread?thread={{.Title}}">{{.Title}}</a></li>
+        {{end}}
+    </ul>
+{{end}}

@@ -1,0 +1,9 @@
+{{define "title"}}All messages in Thread{{end}}
+
+{{define "main"}}
+    <ul>
+        {{range .}}
+            <li><p>{{.CreatorID}}: {{.Content}}</p></li>
+        {{end}}
+    </ul>
+{{end}}

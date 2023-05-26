@@ -12,9 +12,14 @@ func (app *application) routes() *http.ServeMux {
 
 	mux.HandleFunc("/", app.home)
 	mux.HandleFunc("/forum", app.forum)
+	mux.HandleFunc("/forum/create", app.createMessage)
+	mux.HandleFunc("/forum/view", app.getThreadMessages)
+	mux.HandleFunc("/forum/subjects", app.getSubjects)
+	mux.HandleFunc("/forum/subject", app.getThreads)
+	mux.HandleFunc("/forum/thread", app.getThreadMessages)
 
 	// TODO LIST:
-	// mux.HandleFunc("/forum/subject", viewSubject)
+	//
 	// mux.HandleFunc("/forum/subject/thread", viewThread)
 	// mux.HandleFunc("/forum/subject/thread", postThread)
 

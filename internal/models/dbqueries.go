@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -17,6 +18,7 @@ type Thread struct {
 	ThreadID    int
 	SubjectID   int
 	DateCreated time.Time
+	Title       string
 }
 
 type Subject struct {
@@ -36,7 +38,7 @@ type SubjectModel struct {
 	DB *sql.DB
 }
 
-func (m *MessageModel) Insert(threadId int, content string, creatorId int) (int, error) {
+func (m *MessageModel) InsertMessageInThread(threadId int, content string, creatorId int) (int, error) {
 	query := `INSERT INTO messages (thread_id, content, creator_id, date_created)
 	VALUES(?, ?, ?, UTC_TIMESTAMP())`
 
@@ -53,33 +55,111 @@ func (m *MessageModel) Insert(threadId int, content string, creatorId int) (int,
 	return int(id), nil
 }
 
-func (t *ThreadModel) Insert(threadId int, subjectId int) (int, error) {
+func (m *MessageModel) InsertThreadInSubject(threadId int, subjectId int) (int, error) {
 	return 0, nil
 }
 
-func (s *SubjectModel) Insert(subjectId int, title string) (int, error) {
+func (m *MessageModel) InsertSubject(subjectId int, title string) (int, error) {
 	return 0, nil
 }
 
-func (m *MessageModel) Get(threadId int) ([]*Message, error) {
-	query := `SELECT content, creator_id FROM messages WHERE
+func (m *MessageModel) GetMessagesInThread(threadId int) ([]*Message, error) {
+	query := `SELECT content, creator_id, date_created, thread_id, message_id FROM messages WHERE
 	thread_id = ?`
 
-	result, err := m.DB.Query(query, threadId)
+	rows, err := m.DB.Query(query, threadId)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	if result != nil {
-		return nil, nil
+	messages := []*Message{}
+
+	for rows.Next() {
+		messag := &Message{}
+
+		err := rows.Scan(&messag.Content, &messag.CreatorID, &messag.DateCreated, &messag.ThreadID, &messag.MessageID)
+		if err != nil {
+			return nil, err
+		}
+		messages = append(messages, messag)
 	}
-	return nil, nil
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return messages, nil
 }
 
-func (t *ThreadModel) Get(subjectId int) (*Thread, error) {
-	return nil, nil
+func (m *MessageModel) GetAllSubjects() ([]*Subject, error) {
+	query := `SELECT id, title FROM subjects`
+
+	results, err := m.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+
+	subjects := []*Subject{}
+
+	for results.Next() {
+		subject := &Subject{}
+		err := results.Scan(&subject.SubjectID, &subject.Title)
+		if err != nil {
+			return nil, err
+		}
+		subjects = append(subjects, subject)
+	}
+	return subjects, nil
+
 }
 
-func (s *SubjectModel) Get() (*Subject, error) {
-	return nil, nil
+func (m *MessageModel) GetThreadsInSubject(subjectId int) ([]*Thread, error) {
+	query := `SELECT title, date_created, thread_id, subject_id FROM threads WHERE subject_id=?`
+
+	results, err := m.DB.Query(query, subjectId)
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+
+	threads := []*Thread{}
+
+	for results.Next() {
+		thread := &Thread{}
+		err := results.Scan(&thread.Title, &thread.DateCreated, &thread.ThreadID, &thread.SubjectID)
+		if err != nil {
+			return nil, err
+		}
+		threads = append(threads, thread)
+	}
+	return threads, nil
+}
+
+func (m *MessageModel) GetThreadId(title string) (int, error) {
+	query := `SELECT thread_id FROM threads WHERE title = ?`
+
+	var titleId *int
+
+	id := m.DB.QueryRow(query, title)
+	err := id.Scan(&titleId)
+	if err != nil {
+		return 0, err
+	}
+	return *titleId, nil
+}
+
+func (m *MessageModel) GetSubjectId(title string) (int, error) {
+	query := `SELECT id FROM subjects WHERE title = ?`
+
+	var titleId *int
+	fmt.Println(title)
+	id := m.DB.QueryRow(query, title)
+	err := id.Scan(&titleId)
+	if err != nil {
+		return 0, err
+	}
+
+	return *titleId, nil
 }

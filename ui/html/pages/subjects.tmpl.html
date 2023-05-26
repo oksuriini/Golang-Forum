@@ -1,0 +1,9 @@
+{{define "title"}}All Subjects{{end}}
+
+{{define "main"}}
+    <ul>
+        {{range .}}
+            <li><a href="/forum/subject?subject={{.Title}}">{{.Title}}</a></li>
+        {{end}}
+    </ul>
+{{end}}
