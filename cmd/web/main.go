@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-playground/form/v4"
 	"goForum.oksuriini.net/internal/models"
 )
 
@@ -15,6 +16,7 @@ type application struct {
 	messages    *models.MessageModel
 	threads     *models.ThreadModel
 	subjects    *models.SubjectModel
+	formDecoder *form.Decoder
 }
 
 func main() {

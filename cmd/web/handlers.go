@@ -4,10 +4,28 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
+
+	"goForum.oksuriini.net/internal/models"
 )
 
 type Data struct {
 	CurrentYear int
+}
+
+type DataPost struct {
+	Form createForm
+}
+
+type DataPass struct {
+	Data        []*models.Message
+	ThreadTitle string
+}
+
+type createForm struct {
+	CreatorID   string `form:"creator"`
+	Content     string `form:"content"`
+	ThreadTitle string `form:"threadtitle"`
 }
 
 // Add function handlers here
@@ -70,14 +88,59 @@ func (app *application) createMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content := "Test Content"
-	threadId := 1
-	creatorId := 2
+	var form createForm
 
-	app.messages.InsertMessageInThread(threadId, content, creatorId)
+	err := r.ParseForm()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
-	http.Redirect(w, r, fmt.Sprintf("/"), http.StatusSeeOther)
+	app.formDecoder.Decode(form, r.Form)
+
+	fmt.Println(r.FormValue("content"))
+
+	content := r.FormValue("content")
+	creatorID, err := strconv.Atoi(r.FormValue("creator"))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	tt := r.FormValue("threadtitle")
+
+	fmt.Println(r.FormValue("threadtitle"))
+
+	tid, err := app.messages.GetThreadId(r.FormValue("threadtitle"))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Println(tid)
+	fmt.Println(content)
+	fmt.Println(creatorID)
+
+	app.messages.InsertMessageInThread(tid, content, creatorID)
+
+	//content := "Test Content"
+	//threadId := 1
+	//creatorId := 2
+	//app.messages.InsertMessageInThread(threadId, content, creatorId)
+
+	http.Redirect(w, r, fmt.Sprintf("/forum/thread?thread=%s", tt), http.StatusSeeOther)
+
 }
+
+//func (app *application) postMessage(w http.ResponseWriter, r *http.Request) {
+//	if r.Method != http.MethodPost {
+//		w.Header().Set("Allow", http.MethodPost)
+//		app.clientError(w, http.StatusMethodNotAllowed)
+//		return
+//	}
+//
+//	content :=
+//
+//}
 
 func (app *application) getThreadMessages(w http.ResponseWriter, r *http.Request) {
 
@@ -119,13 +182,18 @@ func (app *application) getThreadMessages(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	finalData := DataPass{
+		Data:        data,
+		ThreadTitle: threadTitle,
+	}
+
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", data)
+	err = ts.ExecuteTemplate(w, "base", finalData)
 	if err != nil {
 		app.serverError(w, err)
 	}
