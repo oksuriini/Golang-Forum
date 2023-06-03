@@ -22,6 +22,12 @@ type DataPass struct {
 	ThreadTitle string
 }
 
+type DataSubPass struct {
+	Data         []*models.Thread
+	SubjectID    int
+	SubjectTitle string
+}
+
 type createForm struct {
 	CreatorID   string `form:"creator"`
 	Content     string `form:"content"`
@@ -81,67 +87,6 @@ func (app *application) forum(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) createMessage(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		app.clientError(w, http.StatusMethodNotAllowed)
-		return
-	}
-
-	var form createForm
-
-	err := r.ParseForm()
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	app.formDecoder.Decode(form, r.Form)
-
-	fmt.Println(r.FormValue("content"))
-
-	content := r.FormValue("content")
-	creatorID, err := strconv.Atoi(r.FormValue("creator"))
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-	tt := r.FormValue("threadtitle")
-
-	fmt.Println(r.FormValue("threadtitle"))
-
-	tid, err := app.messages.GetThreadId(r.FormValue("threadtitle"))
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	fmt.Println(tid)
-	fmt.Println(content)
-	fmt.Println(creatorID)
-
-	app.messages.InsertMessageInThread(tid, content, creatorID)
-
-	//content := "Test Content"
-	//threadId := 1
-	//creatorId := 2
-	//app.messages.InsertMessageInThread(threadId, content, creatorId)
-
-	http.Redirect(w, r, fmt.Sprintf("/forum/thread?thread=%s", tt), http.StatusSeeOther)
-
-}
-
-//func (app *application) postMessage(w http.ResponseWriter, r *http.Request) {
-//	if r.Method != http.MethodPost {
-//		w.Header().Set("Allow", http.MethodPost)
-//		app.clientError(w, http.StatusMethodNotAllowed)
-//		return
-//	}
-//
-//	content :=
-//
-//}
-
 func (app *application) getThreadMessages(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/forum/thread" {
@@ -197,7 +142,6 @@ func (app *application) getThreadMessages(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		app.serverError(w, err)
 	}
-
 }
 
 func (app *application) getThreads(w http.ResponseWriter, r *http.Request) {
@@ -233,11 +177,16 @@ func (app *application) getThreads(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", data)
+	newData := DataSubPass{
+		Data:         data,
+		SubjectID:    subjectId,
+		SubjectTitle: subjectTitle,
+	}
+
+	err = ts.ExecuteTemplate(w, "base", newData)
 	if err != nil {
 		app.serverError(w, err)
 	}
-
 }
 
 func (app *application) getSubjects(w http.ResponseWriter, r *http.Request) {
@@ -269,7 +218,101 @@ func (app *application) getSubjects(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverError(w, err)
 	}
+}
 
+func (app *application) createMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var form createForm
+
+	err := r.ParseForm()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.formDecoder.Decode(form, r.Form)
+
+	fmt.Println(r.FormValue("content"))
+
+	content := r.FormValue("content")
+	creatorID, err := strconv.Atoi(r.FormValue("creator"))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	tt := r.FormValue("threadtitle")
+
+	fmt.Println(r.FormValue("threadtitle"))
+
+	tid, err := app.messages.GetThreadId(r.FormValue("threadtitle"))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Println(tid)
+	fmt.Println(content)
+	fmt.Println(creatorID)
+
+	app.messages.InsertMessageInThread(tid, content, creatorID)
+
+	http.Redirect(w, r, fmt.Sprintf("/forum/thread?thread=%s", tt), http.StatusSeeOther)
+}
+
+func (app *application) createSubject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var form createForm
+
+	err := r.ParseForm()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.formDecoder.Decode(form, r.Form)
+
+	fmt.Println(r.FormValue("subject"))
+
+	content := r.FormValue("subject")
+
+	app.messages.InsertSubject(content)
+
+	http.Redirect(w, r, fmt.Sprintf("/forum/subjects"), http.StatusSeeOther)
+
+}
+
+func (app *application) createThread(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	threadTitle := r.FormValue("threadtitle")
+	subjectId, err := strconv.Atoi(r.FormValue("subjectid"))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.messages.InsertThreadInSubject(subjectId, threadTitle)
+	http.Redirect(w, r, fmt.Sprintf("/forum/subject?subject=%s", r.FormValue("subjecttitle")), http.StatusSeeOther)
 }
 
 //func viewSubject(w http.ResponseWriter, r *http.Request) {

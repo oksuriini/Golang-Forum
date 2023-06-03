@@ -55,12 +55,37 @@ func (m *MessageModel) InsertMessageInThread(threadId int, content string, creat
 	return int(id), nil
 }
 
-func (m *MessageModel) InsertThreadInSubject(threadId int, subjectId int) (int, error) {
-	return 0, nil
+func (m *MessageModel) InsertThreadInSubject(subjectId int, title string) (int, error) {
+	query := `INSERT INTO threads (title, subject_id, date_created) VALUES(?,?,UTC_TIMESTAMP())`
+
+	result, err := m.DB.Exec(query, title, subjectId)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
+
 }
 
-func (m *MessageModel) InsertSubject(subjectId int, title string) (int, error) {
-	return 0, nil
+func (m *MessageModel) InsertSubject(title string) (int, error) {
+	query := `INSERT INTO subjects (title) VALUES(?)`
+
+	result, err := m.DB.Exec(query, title)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
 }
 
 func (m *MessageModel) GetMessagesInThread(threadId int) ([]*Message, error) {

@@ -16,6 +16,8 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("/forum/subjects", app.getSubjects)
 	mux.HandleFunc("/forum/subject", app.getThreads)
 	mux.HandleFunc("/forum/thread", app.getThreadMessages)
+	mux.HandleFunc("/forum/createsubject", app.createSubject)
+	mux.HandleFunc("/forum/createthread", app.createThread)
 
 	// TODO LIST:
 	//
