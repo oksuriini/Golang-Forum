@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Message struct {
@@ -94,9 +96,24 @@ func (m *MessageModel) InsertSubject(title string) (int, error) {
 	return int(id), nil
 }
 
-func (m *MessageModel) RegisterNewUser(name string, password string, email string) (int, error) {
+func (m *MessageModel) RegisterNewUser(name string, password string, email string) (int64, error) {
 	query := `INSERT INTO users (name, email, hashed_password, created) VALUES(?,?,?,UTC_TIMESTAMP())`
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	if err != nil {
+		return 0, err
+	}
+
+	result, err := m.DB.Exec(query, name, email, hashedPassword)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func (m *MessageModel) GetMessagesInThread(threadId int) ([]*Message, error) {

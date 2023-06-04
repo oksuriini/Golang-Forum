@@ -34,6 +34,12 @@ type createForm struct {
 	ThreadTitle string `form:"threadtitle"`
 }
 
+type userForm struct {
+	Name     string
+	Email    string
+	Password string
+}
+
 // Add function handlers here
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -313,6 +319,52 @@ func (app *application) createThread(w http.ResponseWriter, r *http.Request) {
 
 	app.messages.InsertThreadInSubject(subjectId, threadTitle)
 	http.Redirect(w, r, fmt.Sprintf("/forum/subject?subject=%s", r.FormValue("subjecttitle")), http.StatusSeeOther)
+}
+
+func (app *application) registerUserPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	_, err = app.messages.RegisterNewUser(r.FormValue("name"), r.FormValue("password"), r.FormValue("email"))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/forum", http.StatusSeeOther)
+}
+
+func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/forum/registrar" {
+		app.notFound(w)
+		return
+	}
+
+	files := []string{
+		"./ui/html/base.tmpl.html",
+		"./ui/html/partials/footer.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/register.tmpl.html",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		app.serverError(w, err)
+	}
 }
 
 //func viewSubject(w http.ResponseWriter, r *http.Request) {

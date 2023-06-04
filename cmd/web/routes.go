@@ -10,19 +10,28 @@ func (app *application) routes() *http.ServeMux {
 
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
+	// basic handlers
 	mux.HandleFunc("/", app.home)
 	mux.HandleFunc("/forum", app.forum)
-	mux.HandleFunc("/forum/create", app.createMessage)
+
+	// get handlers
 	mux.HandleFunc("/forum/subjects", app.getSubjects)
 	mux.HandleFunc("/forum/subject", app.getThreads)
 	mux.HandleFunc("/forum/thread", app.getThreadMessages)
+
+	// create handlers
 	mux.HandleFunc("/forum/createsubject", app.createSubject)
 	mux.HandleFunc("/forum/createthread", app.createThread)
+	mux.HandleFunc("/forum/create", app.createMessage)
+
+	// user handlers
+	mux.HandleFunc("/forum/registrar", app.registerUser)
+	mux.HandleFunc("/forum/register", app.registerUserPost)
 
 	// TODO
 	// login
-	// register
 	// additional stuff??
+	//
 
 	//INFUTURE
 	// admin page
