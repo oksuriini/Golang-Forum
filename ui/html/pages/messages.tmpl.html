@@ -1,0 +1,24 @@
+{{define "title"}}All messages in Thread{{end}}
+
+{{define "main"}}
+    <ul>
+        {{range .Data}}
+            <li><p>{{.CreatorID}}: {{.Content}}</p></li>
+        {{end}}
+    </ul>
+    <h4>Creator:</h4>
+    <form action="/forum/create" method="POST">
+        <input type="hidden" name="threadtitle" value="{{.ThreadTitle}}">
+        <div>
+            <label>Creator ID:</label>
+            <input type="text" name="creator" value="">
+        </div>
+        <div>
+            <label>Content:</label>
+            <textarea name="content"></textarea>
+        </div>
+        <div>
+            <input type="submit" value="Submit">
+        </div>
+    </form>
+{{end}}

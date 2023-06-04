@@ -1,0 +1,20 @@
+{{define "title"}}All Subjects{{end}}
+
+{{define "main"}}
+    <h4><a href="/forum">Back</a></h4>
+
+    <ul>
+        {{range .}}
+            <li><a href="/forum/subject?subject={{.Title}}">{{.Title}}</a></li>
+        {{end}}
+    </ul>
+    <form action="/forum/createsubject" method="POST">
+        <div>
+            <label>Subject:</label>
+            <input type="text" name="subject"></textarea>
+        </div>
+        <div>
+            <input type="submit" value="Submit">
+        </div>
+    </form>
+{{end}}
