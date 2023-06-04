@@ -19,10 +19,14 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("/forum/createsubject", app.createSubject)
 	mux.HandleFunc("/forum/createthread", app.createThread)
 
-	// TODO LIST:
-	//
-	// mux.HandleFunc("/forum/subject/thread", viewThread)
-	// mux.HandleFunc("/forum/subject/thread", postThread)
+	// TODO
+	// login
+	// register
+	// additional stuff??
+
+	//INFUTURE
+	// admin page
+	// docker integration/format etc -> whole program to work in docker out of the box
 
 	return mux
 }

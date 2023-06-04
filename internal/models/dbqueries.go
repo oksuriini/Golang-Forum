@@ -38,6 +38,12 @@ type SubjectModel struct {
 	DB *sql.DB
 }
 
+type User struct {
+	Email    string
+	Password string
+	Name     string
+}
+
 func (m *MessageModel) InsertMessageInThread(threadId int, content string, creatorId int) (int, error) {
 	query := `INSERT INTO messages (thread_id, content, creator_id, date_created)
 	VALUES(?, ?, ?, UTC_TIMESTAMP())`
@@ -86,6 +92,11 @@ func (m *MessageModel) InsertSubject(title string) (int, error) {
 	}
 
 	return int(id), nil
+}
+
+func (m *MessageModel) RegisterNewUser(name string, password string, email string) (int, error) {
+	query := `INSERT INTO users (name, email, hashed_password, created) VALUES(?,?,?,UTC_TIMESTAMP())`
+
 }
 
 func (m *MessageModel) GetMessagesInThread(threadId int) ([]*Message, error) {
