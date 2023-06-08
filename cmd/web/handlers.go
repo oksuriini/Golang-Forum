@@ -1,11 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
 
+	"github.com/go-playground/form/v4"
 	"goForum.oksuriini.net/internal/models"
 )
 
@@ -32,6 +34,8 @@ type createForm struct {
 	CreatorID   string `form:"creator"`
 	Content     string `form:"content"`
 	ThreadTitle string `form:"threadtitle"`
+	Subject     string `form:"subject"`
+	SubjectID   string `form:"subjectid"`
 }
 
 type userForm struct {
@@ -40,8 +44,7 @@ type userForm struct {
 	Password string
 }
 
-// Add function handlers here
-
+// Homepage handler
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/" {
@@ -68,6 +71,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Forum mainpage
 func (app *application) forum(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/forum" {
 		app.notFound(w)
@@ -93,6 +97,10 @@ func (app *application) forum(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ----------------------------------------------------------------------
+// GET Handlers
+
+// Fetches messages of specific thread
 func (app *application) getThreadMessages(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/forum/thread" {
@@ -150,6 +158,7 @@ func (app *application) getThreadMessages(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// Fetches all threads under a subject
 func (app *application) getThreads(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/forum/subject" {
 		app.notFound(w)
@@ -195,6 +204,7 @@ func (app *application) getThreads(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Fetches all subjects
 func (app *application) getSubjects(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/forum/subjects" {
 		app.notFound(w)
@@ -226,122 +236,7 @@ func (app *application) getSubjects(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) createMessage(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		app.clientError(w, http.StatusMethodNotAllowed)
-		return
-	}
-
-	var form createForm
-
-	err := r.ParseForm()
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	app.formDecoder.Decode(form, r.Form)
-
-	fmt.Println(r.FormValue("content"))
-
-	content := r.FormValue("content")
-	creatorID, err := strconv.Atoi(r.FormValue("creator"))
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-	tt := r.FormValue("threadtitle")
-
-	fmt.Println(r.FormValue("threadtitle"))
-
-	tid, err := app.messages.GetThreadId(r.FormValue("threadtitle"))
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	fmt.Println(tid)
-	fmt.Println(content)
-	fmt.Println(creatorID)
-
-	app.messages.InsertMessageInThread(tid, content, creatorID)
-
-	http.Redirect(w, r, fmt.Sprintf("/forum/thread?thread=%s", tt), http.StatusSeeOther)
-}
-
-func (app *application) createSubject(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		app.clientError(w, http.StatusMethodNotAllowed)
-		return
-	}
-
-	var form createForm
-
-	err := r.ParseForm()
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	app.formDecoder.Decode(form, r.Form)
-
-	fmt.Println(r.FormValue("subject"))
-
-	content := r.FormValue("subject")
-
-	app.messages.InsertSubject(content)
-
-	http.Redirect(w, r, fmt.Sprintf("/forum/subjects"), http.StatusSeeOther)
-
-}
-
-func (app *application) createThread(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		app.clientError(w, http.StatusMethodNotAllowed)
-		return
-	}
-
-	err := r.ParseForm()
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	threadTitle := r.FormValue("threadtitle")
-	subjectId, err := strconv.Atoi(r.FormValue("subjectid"))
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	app.messages.InsertThreadInSubject(subjectId, threadTitle)
-	http.Redirect(w, r, fmt.Sprintf("/forum/subject?subject=%s", r.FormValue("subjecttitle")), http.StatusSeeOther)
-}
-
-func (app *application) registerUserPost(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		app.clientError(w, http.StatusMethodNotAllowed)
-		return
-	}
-
-	err := r.ParseForm()
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	_, err = app.messages.RegisterNewUser(r.FormValue("name"), r.FormValue("password"), r.FormValue("email"))
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-	http.Redirect(w, r, "/forum", http.StatusSeeOther)
-}
-
+// Fetches user registration form
 func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/forum/registrar" {
 		app.notFound(w)
@@ -367,40 +262,175 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//func viewSubject(w http.ResponseWriter, r *http.Request) {
-//	subject := r.URL.Query().Get("sub")
-//	if subject == "" {
-//		http.NotFound(w, r)
-//		return
-//	}
-//	fmt.Fprint(w, fmt.Sprintf("Displaying subject: %s", subject))
-//}
+// Fetches user login form
+func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/forum/login" {
+		app.notFound(w)
+		return
+	}
 
-// func viewSubfolder(w http.ResponseWriter, r *http.Request) {}
-//
-// func postSubfolder(w http.ResponseWriter, r *http.Request) {}
+	files := []string{
+		"./ui/html/base.tmpl.html",
+		"./ui/html/partials/footer.tmpl.html",
+		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/pages/login.tmpl.html",
+	}
 
-//func viewThread(w http.ResponseWriter, r *http.Request) {
-//	if r.Method != http.MethodGet {
-//		w.Header().Set("Allow", http.MethodGet)
-//		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-//	}
-//	w.Write([]byte("Here are thread messages"))
-//}
-//
-//func postThread(w http.ResponseWriter, r *http.Request) {
-//	if r.Method != http.MethodPost {
-//		w.Header().Set("Allow", http.MethodPost)
-//		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-//	}
-//	w.Write([]byte("Message posted successfully"))
-//}
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
-//func register(w http.ResponseWriter, r *http.Request) {}
-//
-//func registerPost(w http.ResponseWriter, r *http.Request) {}
-//
-//func login(w http.ResponseWriter, r *http.Request) {}
-//
-//func logout(w http.ResponseWriter, r *http.Request) {}
-//
+	err = ts.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		app.serverError(w, err)
+	}
+}
+
+// ----------------------------------------------------------------------
+// POST Handlers
+
+// Creates a message under a specific thread with POST method lives under getThreadMessages handler
+func (app *application) createMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var form createForm
+
+	app.decodePostForm(r, &form)
+
+	tid, err := app.messages.GetThreadId(form.ThreadTitle)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	creatorInt, err := strconv.Atoi(form.CreatorID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.messages.InsertMessageInThread(tid, form.Content, creatorInt)
+
+	http.Redirect(w, r, fmt.Sprintf("/forum/thread?thread=%s", form.ThreadTitle), http.StatusSeeOther)
+}
+
+// Creates a subject on main forum with POST method lives under getSubjects handler
+func (app *application) createSubject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var form createForm
+
+	app.decodePostForm(r, &form)
+
+	app.messages.InsertSubject(form.Subject)
+
+	http.Redirect(w, r, fmt.Sprintf("/forum/subjects"), http.StatusSeeOther)
+}
+
+// Create a thread under a specified subject with POST method lives under getThreads
+func (app *application) createThread(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var form createForm
+
+	app.decodePostForm(r, &form)
+
+	subjectId, err := strconv.Atoi(form.SubjectID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.messages.InsertThreadInSubject(subjectId, form.ThreadTitle)
+	http.Redirect(w, r, fmt.Sprintf("/forum/subject?subject=%s", form.Subject), http.StatusSeeOther)
+}
+
+// Create a user POST method lives under registerUser handler
+func (app *application) registerUserPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	_, err = app.messages.RegisterNewUser(r.FormValue("name"), r.FormValue("password"), r.FormValue("email"))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/forum", http.StatusSeeOther)
+}
+
+// Login a user with POST method lives under loginUser handler
+func (app *application) loginUserPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		app.clientError(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	id, err := app.messages.Authenticate(r.FormValue("name"), r.FormValue("password"))
+
+	if id == 0 {
+		app.infoLogger.Println("Authentication failed for user")
+		http.Redirect(w, r, "/forum/login", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Authenticated user id:%d", id)
+
+	http.Redirect(w, r, "/forum", http.StatusSeeOther)
+}
+
+func (app *application) logoutUserPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+}
+
+func (app *application) decodePostForm(req *http.Request, dst any) error {
+
+	err := req.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	err = app.formDecoder.Decode(dst, req.PostForm)
+	if err != nil {
+		var invalidDecoderError *form.InvalidDecoderError
+
+		if errors.As(err, &invalidDecoderError) {
+			panic(err)
+		}
+		return err
+	}
+	return nil
+}

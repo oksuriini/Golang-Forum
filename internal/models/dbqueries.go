@@ -216,3 +216,22 @@ func (m *MessageModel) GetSubjectId(title string) (int, error) {
 
 	return *titleId, nil
 }
+
+func (m *MessageModel) Authenticate(name, password string) (int, error) {
+	var id int
+	var hashedPassword []byte
+
+	query := "SELECT name, hashed_password FROM users WHERE name = ?"
+
+	err := m.DB.QueryRow(query, name).Scan(&id, &hashedPassword)
+	if err != nil {
+		return 0, err
+	}
+
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}

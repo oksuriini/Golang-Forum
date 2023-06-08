@@ -27,6 +27,8 @@ func (app *application) routes() *http.ServeMux {
 	// user handlers
 	mux.HandleFunc("/forum/registrar", app.registerUser)
 	mux.HandleFunc("/forum/register", app.registerUserPost)
+	mux.HandleFunc("/forum/login", app.loginUser)
+	mux.HandleFunc("/forum/loginpost", app.loginUserPost)
 
 	// TODO
 	// login

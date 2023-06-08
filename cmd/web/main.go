@@ -6,17 +6,17 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 	"goForum.oksuriini.net/internal/models"
 )
 
 type application struct {
-	errorLogger *log.Logger
-	infoLogger  *log.Logger
-	messages    *models.MessageModel
-	threads     *models.ThreadModel
-	subjects    *models.SubjectModel
-	formDecoder *form.Decoder
+	errorLogger    *log.Logger
+	infoLogger     *log.Logger
+	messages       *models.MessageModel
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -34,10 +34,13 @@ func main() {
 	db, err := openDB(*dsn, "mysql")
 	defer db.Close()
 
+	formDecoder := form.NewDecoder()
+
 	// application struct holds
 	app := &application{
 		errorLogger: errorLogger,
 		infoLogger:  infoLogger,
+		formDecoder: formDecoder,
 		messages:    &models.MessageModel{DB: db},
 	}
 
