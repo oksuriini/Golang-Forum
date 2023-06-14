@@ -9,39 +9,36 @@ import (
 
 	"github.com/go-playground/form/v4"
 	"goForum.oksuriini.net/internal/models"
+	"goForum.oksuriini.net/internal/validator"
 )
 
-type Data struct {
-	CurrentYear int
-}
-
-type DataPost struct {
-	Form createForm
-}
-
 type DataPass struct {
-	Data        []*models.Message
-	ThreadTitle string
+	Data                []*models.Message `form:"TODO"`
+	ThreadTitle         string            `form:"TODO"`
+	validator.Validator `form:"-"`
 }
 
 type DataSubPass struct {
-	Data         []*models.Thread
-	SubjectID    int
-	SubjectTitle string
+	Data                []*models.Thread `form:"TODO"`
+	SubjectID           int              `form:"TODO"`
+	SubjectTitle        string           `form:"TODO"`
+	validator.Validator `form:"-"`
 }
 
 type createForm struct {
-	CreatorID   string `form:"creator"`
-	Content     string `form:"content"`
-	ThreadTitle string `form:"threadtitle"`
-	Subject     string `form:"subject"`
-	SubjectID   string `form:"subjectid"`
+	CreatorID           string `form:"creator"`
+	Content             string `form:"content"`
+	ThreadTitle         string `form:"threadtitle"`
+	Subject             string `form:"subject"`
+	SubjectID           string `form:"subjectid"`
+	validator.Validator `form:"-"`
 }
 
 type userForm struct {
-	Name     string
-	Email    string
-	Password string
+	Name                string `form:"TODO"`
+	Email               string `form:"TODO"`
+	Password            string `form:"TODO"`
+	validator.Validator `form:"-"`
 }
 
 // Homepage handler
@@ -302,6 +299,14 @@ func (app *application) createMessage(w http.ResponseWriter, r *http.Request) {
 	var form createForm
 
 	app.decodePostForm(r, &form)
+
+	form.CheckValid(validator.FieldNotBlank(form.Content), "content", "This field cannot be blank")
+	form.CheckValid(validator.FieldNotBlank(form.CreatorID), "creator", "You need to be logged in to post")
+
+	if !form.Valid() {
+		w.Write([]byte("FORM IS NOT VALID"))
+		return
+	}
 
 	tid, err := app.messages.GetThreadId(form.ThreadTitle)
 	if err != nil {
