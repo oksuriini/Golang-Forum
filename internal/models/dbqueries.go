@@ -77,7 +77,6 @@ func (m *MessageModel) InsertThreadInSubject(subjectId int, title string) (int, 
 	}
 
 	return int(id), nil
-
 }
 
 func (m *MessageModel) InsertSubject(title string) (int, error) {
@@ -165,7 +164,6 @@ func (m *MessageModel) GetAllSubjects() ([]*Subject, error) {
 		subjects = append(subjects, subject)
 	}
 	return subjects, nil
-
 }
 
 func (m *MessageModel) GetThreadsInSubject(subjectId int) ([]*Thread, error) {
