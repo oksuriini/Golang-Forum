@@ -219,10 +219,11 @@ func (m *MessageModel) Authenticate(name, password string) (int, error) {
 	var id int
 	var hashedPassword []byte
 
-	query := "SELECT name, hashed_password FROM users WHERE name = ?"
+	query := "SELECT user_id, hashed_password FROM users WHERE name = ?"
 
 	err := m.DB.QueryRow(query, name).Scan(&id, &hashedPassword)
 	if err != nil {
+		fmt.Println("ERROR IN DB QUERY ROW")
 		return 0, err
 	}
 

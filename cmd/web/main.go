@@ -20,10 +20,9 @@ type application struct {
 }
 
 func main() {
-
 	// address for port number and dsn for you database dsn
 	addr := flag.String("addr", ":4050", "Port number from which the application servers")
-	dsn := flag.String("dsn", "web:salis@/goforum?parseTime=true", "Database DSN")
+	dsn := flag.String("dsn", "root:passw0rd@/goforum?parseTime=true", "Database DSN")
 	flag.Parse()
 
 	// create loggers for loggin info and errors
@@ -32,6 +31,10 @@ func main() {
 
 	// openDB func in dbfunc.go
 	db, err := openDB(*dsn, "mysql")
+	if err != nil {
+		errorLogger.Fatal(err)
+		return
+	}
 	defer db.Close()
 
 	formDecoder := form.NewDecoder()
@@ -44,7 +47,7 @@ func main() {
 		messages:    &models.MessageModel{DB: db},
 	}
 
-	//srv to hold Server struct
+	// srv to hold Server struct
 	srv := &http.Server{
 		Addr:     *addr,
 		ErrorLog: errorLogger,

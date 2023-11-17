@@ -43,7 +43,6 @@ type userForm struct {
 
 // Homepage handler
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-
 	if r.URL.Path != "/" {
 		app.notFound(w)
 		return
@@ -99,7 +98,6 @@ func (app *application) forum(w http.ResponseWriter, r *http.Request) {
 
 // Fetches messages of specific thread
 func (app *application) getThreadMessages(w http.ResponseWriter, r *http.Request) {
-
 	if r.URL.Path != "/forum/thread" {
 		app.notFound(w)
 		return
@@ -400,15 +398,22 @@ func (app *application) loginUserPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app.infoLogger.Printf("User tried to log with info: %s", r.FormValue("name"))
+
 	id, err := app.messages.Authenticate(r.FormValue("name"), r.FormValue("password"))
+	if err != nil {
+		app.errorLogger.Println("Error detected")
+		app.errorLogger.Println(err)
+		return
+	}
 
 	if id == 0 {
-		app.infoLogger.Println("Authentication failed for user")
+		app.infoLogger.Printf("Authentication failed for user with id: %d \n", id)
 		http.Redirect(w, r, "/forum/login", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("Authenticated user id:%d", id)
+	fmt.Printf("Authenticated user id: %d \n", id)
 
 	http.Redirect(w, r, "/forum", http.StatusSeeOther)
 }
@@ -418,11 +423,9 @@ func (app *application) logoutUserPost(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-
 }
 
 func (app *application) decodePostForm(req *http.Request, dst any) error {
-
 	err := req.ParseForm()
 	if err != nil {
 		return err
